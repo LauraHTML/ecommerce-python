@@ -86,13 +86,6 @@ def atualizar_campo(mensagem, valor_antigo):
         print("A alteração foi cancelada e o valor antigo foi mantido.")
         return valor_antigo
 
-# promocao = False
-# nova_promocao = atualizar_campo("Digite o novo valor da promoção: ", 5)
-# if nova_promocao > 0:
-#     promocao = True
-# print(nova_promocao)
-# print(promocao)
-
 def atualizar_produto():
     lista_de_produtos()
     id_produto = int(input('Digite o ID do produto: '))
