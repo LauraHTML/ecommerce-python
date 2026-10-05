@@ -59,13 +59,11 @@ def atualizar_usuario(id_usuario, nome=None, email=None, senha=None):
         print("Nenhum dado novo fornecido para atualização.")
         return False
     campos_virgula = ", ".join(campos_sql)
-
     query = f"UPDATE usuarios SET {campos_virgula} WHERE id = %s"
     valores.append(id_usuario)
 
     with psycopg2.connect(URL_BANCO) as conexao:
         with conexao.cursor() as cursor:
-
             cursor.execute(query, tuple(valores))
             conexao.commit()
 
@@ -82,4 +80,4 @@ def deletar_usuario(id_usuario):
             query = "DELETE FROM usuarios WHERE id = %s"
             cursor.execute(query, (id_usuario,))
             conexao.commit()
-            print("Usuário deletado.")
+            print("Usuário deletado com sucesso")

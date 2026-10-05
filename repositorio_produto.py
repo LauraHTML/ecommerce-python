@@ -40,3 +40,12 @@ def buscar_produto_por_id(produto_id):
                 "id_categoria": resultado[7]
             }
             return produto
+
+def deletar_usuario(id_usuario):
+    with psycopg2.connect(URL_BANCO) as conexao:
+        with conexao.cursor() as cursor:
+            query = "DELETE FROM produtos WHERE id = %s"
+            cursor.execute(query, (id_usuario,))
+            conexao.commit()
+            print("Produto deletado com sucesso")
+
