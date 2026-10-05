@@ -32,7 +32,11 @@ def buscar_produtos():
             return produtos
 
 def buscar_produto_por_id(produto_id):
-    query = "SELECT nome, descricao, preco_atual, valor_promocao, quantidade FROM produtos WHERE id = %s;"
+    query = ("""
+             SELECT p.nome, p.descricao, p.preco_atual, p.valor_promocao, p.quantidade, c.nome AS nome_categoria 
+             FROM produtos p 
+            INNER JOIN categorias c ON p.id_categoria = c.id AND WHERE p.id = %s;
+             """)
     with psycopg2.connect(URL_BANCO) as conexao:
         with conexao.cursor() as cursor:
             cursor.execute(query,(produto_id,))
@@ -48,9 +52,41 @@ def buscar_produto_por_id(produto_id):
                 "promocao": resultado[4],
                 "valor_promocao": resultado[5],
                 "quantidade": resultado[6],
-                "id_categoria": resultado[7]
+                "categoria": resultado[7]
             }
             return produto
+
+def buscar_por_categoria():
+    # produtos: p, categorias: c
+    query = """
+    SELECT p.id, p.nome, p.preco, c.nome AS nome_categoria
+    FROM produtos p
+        INNER JOIN categorias c ON p.id_categoria = c.id 
+    """
+    with psycopg2.connect(URL_BANCO) as conexao:
+        with conexao.cursor() as cursor:
+            cursor.execute(query)
+            produtos_categorias = cursor.fetchall()
+
+            produto_com_categoria = []
+            for linha in produtos_categorias:
+                produto_com_categoria.append({
+                    "id": linha[0],
+                    "nome_produto": linha[1],
+                    "preco": linha[2],
+                    "categoria": linha[3]
+                })
+            return produto_com_categoria
+
+def reduzir_estoque(id_produto):
+    query = """
+    UPDATE produtos SET quantidade = %s - %s WHERE id = %s AND quantidade > 0
+    """
+    with psycopg2.connect(URL_BANCO) as conexao:
+        with conexao.cursor() as cursor:
+            cursor.execute(query, (id_produto,))
+            conexao.commit()
+
 
 def deletar_produto(id_produto):
     with psycopg2.connect(URL_BANCO) as conexao:
