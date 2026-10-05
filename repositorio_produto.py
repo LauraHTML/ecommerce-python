@@ -35,7 +35,7 @@ def buscar_produto_por_id(produto_id):
     query = ("""
              SELECT p.nome, p.descricao, p.preco_atual, p.valor_promocao, p.quantidade, c.nome AS nome_categoria 
              FROM produtos p 
-            INNER JOIN categorias c ON p.id_categoria = c.id AND WHERE p.id = %s;
+            INNER JOIN categorias c ON p.id_categoria = c.id WHERE p.id = %s;
              """)
     with psycopg2.connect(URL_BANCO) as conexao:
         with conexao.cursor() as cursor:
@@ -78,15 +78,21 @@ def buscar_por_categoria():
                 })
             return produto_com_categoria
 
-def reduzir_estoque(id_produto):
+def reduzir_estoque(id_produto, quantidade_comprada):
     query = """
-    UPDATE produtos SET quantidade = %s - %s WHERE id = %s AND quantidade > 0
+    UPDATE produtos SET quantidade = quantidade - %s WHERE id = %s AND quantidade > 0
     """
     with psycopg2.connect(URL_BANCO) as conexao:
         with conexao.cursor() as cursor:
-            cursor.execute(query, (id_produto,))
+            cursor.execute(query, (quantidade_comprada, id_produto))
             conexao.commit()
 
+            if cursor.rowcount > 0:
+                print(f"Foram compradas {quantidade_comprada} unidades!")
+                return True
+            else:
+                print("Produto não encontrado.")
+                return False
 
 def deletar_produto(id_produto):
     with psycopg2.connect(URL_BANCO) as conexao:
@@ -146,3 +152,24 @@ def atualizar_produto(id_produto, nome= None, descricao= None, preco_atual= None
             else:
                 print("Nenhum produto encontrado com esse ID.")
                 return False
+
+def produtos_em_promocao():
+    query = ("""
+             SELECT nome, descricao, preco_atual, valor_promocao, quantidade, nome AS nome_categoria
+             FROM produtos  WHERE promocao == true;
+             """)
+
+    with psycopg2.connect(URL_BANCO) as conexao:
+        with conexao.cursor() as cursor:
+            cursor.execute(query)
+            produtos_promocao = cursor.fetchall()
+
+            produto_com_promocao = []
+            for produto in produtos_promocao:
+                produto_com_promocao.append({
+                    "id": produto[0],
+                    "nome_produto": produto[1],
+                    "preco": produto[2],
+                    "valor_promocao": produto[3]
+                })
+            return produto_com_promocao

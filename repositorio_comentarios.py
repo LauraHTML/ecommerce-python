@@ -9,7 +9,7 @@ def criar_comentario(id_usuario, id_produto, texto, promocao, valor_nota, img_ur
     query = """
             INSERT INTO comentarios (id_usuario, id_produto, texto, promocao, valor_nota, img_url, data_criacao)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING id; \
+            RETURNING id; 
             """
     with psycopg2.connect(URL_BANCO) as conexao:
         with conexao.cursor() as cursor:
@@ -20,7 +20,7 @@ def criar_comentario(id_usuario, id_produto, texto, promocao, valor_nota, img_ur
             return comentario_id
 
 def ordenar_comentarios():
-    query = "SELECT * FROM comentarios ORDER BY data_criacao ASC;"
+    query = "SELECT * FROM comentarios ORDER BY data_criacao DESC;"
     with psycopg2.connect(URL_BANCO) as conexao:
         with conexao.cursor() as cursor:
             cursor.execute(query)
