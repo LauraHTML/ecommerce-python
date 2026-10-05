@@ -95,3 +95,54 @@ def deletar_produto(id_produto):
             cursor.execute(query, (id_produto,))
             conexao.commit()
             print("Produto deletado com sucesso")
+
+def atualizar_produto(id_produto, nome= None, descricao= None, preco_atual= None, promocao= None, valor_promocao= None, quantidade= None, id_categoria= None):
+    campos_sql = []
+    valores = []
+
+    if nome is not None:
+        campos_sql.append("nome = %s")
+        valores.append(nome)
+    if descricao is not None:
+        campos_sql.append("descricao = %s")
+        valores.append(descricao)
+    if promocao is not None:
+        campos_sql.append("promocao = %s")
+        valores.append(promocao)
+    if valor_promocao is not None:
+        campos_sql.append("valor_promocao = %s")
+        valores.append(valor_promocao)
+    if id_categoria is not None:
+        campos_sql.append("id_categoria = %s")
+        valores.append(id_categoria)
+    if quantidade is not None:
+        campos_sql.append("quantidade = %s")
+        valores.append(quantidade)
+    if id_produto is not None:
+        campos_sql.append("id_produto = %s")
+        valores.append(id_produto)
+    if descricao is not None:
+        campos_sql.append("descricao = %s")
+        valores.append(descricao)
+    if preco_atual is not None:
+        campos_sql.append("preco_atual = %s")
+        valores.append(preco_atual)
+
+    if not campos_sql:
+        print("Nenhum dado novo fornecido para atualização.")
+        return False
+    campos_virgula = ", ".join(campos_sql)
+    query = f"UPDATE produtos SET {campos_virgula} WHERE id = %s"
+    valores.append(id_produto)
+
+    with psycopg2.connect(URL_BANCO) as conexao:
+        with conexao.cursor() as cursor:
+            cursor.execute(query, tuple(valores))
+            conexao.commit()
+
+            if cursor.rowcount > 0:
+                print("Produto atualizado com sucesso!")
+                return True
+            else:
+                print("Nenhum produto encontrado com esse ID.")
+                return False

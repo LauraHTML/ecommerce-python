@@ -44,7 +44,6 @@ def buscar_usuario_por_id(id_usuario):
 def atualizar_usuario(id_usuario, nome=None, email=None, senha=None):
     campos_sql = []
     valores = []
-
     if nome is not None:
         campos_sql.append("nome = %s")
         valores.append(nome)
