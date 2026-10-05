@@ -14,11 +14,22 @@ def criar_produto(nome, descricao, preco_atual, promocao, valor_promocao, quanti
     with psycopg2.connect(URL_BANCO) as conexao:
         with conexao.cursor() as cursor:
             cursor.execute(query, (nome, descricao, preco_atual, promocao, valor_promocao, quantidade, id_categoria))
-
             produto_id = cursor.fetchone()[0]
             conexao.commit()
 
             return produto_id
+
+def buscar_produtos():
+    query = "SELECT * FROM produtos ORDER BY id;"
+    with psycopg2.connect(URL_BANCO) as conexao:
+        with conexao.cursor() as cursor:
+            cursor.execute(query)
+            produtos = cursor.fetchall()
+
+            if not produtos:
+                return None
+
+            return produtos
 
 def buscar_produto_por_id(produto_id):
     query = "SELECT nome, descricao, preco_atual, valor_promocao, quantidade FROM produtos WHERE id = %s;"
@@ -41,11 +52,10 @@ def buscar_produto_por_id(produto_id):
             }
             return produto
 
-def deletar_usuario(id_usuario):
+def deletar_produto(id_produto):
     with psycopg2.connect(URL_BANCO) as conexao:
         with conexao.cursor() as cursor:
             query = "DELETE FROM produtos WHERE id = %s"
-            cursor.execute(query, (id_usuario,))
+            cursor.execute(query, (id_produto,))
             conexao.commit()
             print("Produto deletado com sucesso")
-
