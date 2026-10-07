@@ -1,6 +1,7 @@
 import json
 from utils import voltar_ao_menu_principal
 
+
 fundoPadrao = '\033[0;0m'
 corNumerosPadrao = '\033[1;35m'
 
