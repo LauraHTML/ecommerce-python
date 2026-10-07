@@ -78,22 +78,6 @@ def buscar_por_categoria():
                 })
             return produto_com_categoria
 
-def reduzir_estoque(id_produto, quantidade_comprada):
-    query = """
-    UPDATE produtos SET quantidade = quantidade - %s WHERE id = %s AND quantidade > 0
-    """
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query, (quantidade_comprada, id_produto))
-            conexao.commit()
-
-            if cursor.rowcount > 0:
-                print(f"Foram compradas {quantidade_comprada} unidades!")
-                return True
-            else:
-                print("Produto não encontrado.")
-                return False
-
 def deletar_produto(id_produto):
     with psycopg2.connect(URL_BANCO) as conexao:
         with conexao.cursor() as cursor:
@@ -173,3 +157,26 @@ def produtos_em_promocao():
                     "valor_promocao": produto[3]
                 })
             return produto_com_promocao
+
+def reduzir_estoque(id_produto, quantidade_retirada):
+    query = ("""
+    UPDATE produtos 
+    SET quantidade = quantidade - %s
+    WHERE id = %s
+    """)
+
+    try:
+        if quantidade_retirada <= 0:
+            print('Quantidade de retirada inválida')
+            return False
+        if id_produto is None:
+            print('Nenhum produto foi selecionado')
+            return False
+
+        with psycopg2.connect(URL_BANCO) as conexao:
+            with conexao.cursor() as cursor:
+                cursor.execute(query, (quantidade_retirada, id_produto))
+                conexao.commit()
+
+    except Exception as e:
+        print(f'Erro ao reduxir o estoque: {e}')
