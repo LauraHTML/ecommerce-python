@@ -108,6 +108,8 @@ def gerar_token(size=6, chars=string.ascii_uppercase + string.digits):
     # join: junta a string
     return ''.join(random.choice(chars) for _ in range(size))
 
+# print(gerar_token())
+
 # def criar_sessao(id_usuario):
 #     query = "INSERT INTO sessoes (id_usuario, token_sessao) VALUES (%s, %s);"
 #     token = gerar_token()

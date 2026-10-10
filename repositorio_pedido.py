@@ -36,3 +36,16 @@ def itens_carrinho_para_pedido(id_usuario):
         print(f'Erro no banco de dados: {erro}')
     except ValueError:
         print('Valor inválido')
+
+def modificar_status_pedido(id_pedido, id_usuario, status_pedido):
+    query = "UPDATE pedidos SET status_pedido = %s WHERE id_pedido = %s AND id_usuario = %s;"
+    try:
+        with conexao:
+            with cursor:
+                cursor.execute(query, (status_pedido, id_pedido, id_usuario))
+                conexao.commit()
+
+    except TypeError:
+        print('Valor inválido para a operação')
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
