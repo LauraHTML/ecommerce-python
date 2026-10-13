@@ -1,9 +1,6 @@
 import psycopg2
 
-from utils import URL_BANCO
-
-conexao = psycopg2.connect(URL_BANCO)
-cursor = conexao.cursor()
+from utils import conexao, cursor
 
 def criar_comentario(id_usuario, id_produto, texto, promocao, valor_nota, img_url, data_criacao):
     query = """
@@ -11,23 +8,37 @@ def criar_comentario(id_usuario, id_produto, texto, promocao, valor_nota, img_ur
             VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id; 
             """
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query, (id_usuario, id_produto, texto, promocao, valor_nota, img_url, data_criacao))
-            comentario_id = cursor.fetchone()[0]
-            conexao.commit()
+    try:
+        with conexao:
+            with cursor:
+                cursor.execute(query, (id_usuario, id_produto, texto, promocao, valor_nota, img_url, data_criacao))
+                comentario_id = cursor.fetchone()[0]
+                conexao.commit()
 
-            return comentario_id
+                return comentario_id
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+        return None
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
+        return None
 
 def ordenar_comentarios():
     query = "SELECT * FROM comentarios ORDER BY data_criacao DESC;"
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query)
-            comentarios = cursor.fetchall()
-            if not comentarios:
-                return None
-            return comentarios
+    try:
+        with conexao:
+            with cursor:
+                cursor.execute(query)
+                comentarios = cursor.fetchall()
+                if not comentarios:
+                    return None
+                return comentarios
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+        return []
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
+        return []
 
 def atualizar_comentario(id_comentario, id_produto, valor_nota, texto=None, img_url=None):
     campos_sql = []
@@ -51,22 +62,33 @@ def atualizar_comentario(id_comentario, id_produto, valor_nota, texto=None, img_
     query = f"UPDATE comentarios SET {campos_virgula} WHERE id = %s"
     valores.append([id_comentario, id_produto])
 
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query, tuple(valores))
-            conexao.commit()
+    try:
+        with conexao:
+            with cursor:
+                cursor.execute(query, tuple(valores))
+                conexao.commit()
 
-            if cursor.rowcount > 0:
-                print("Comentário atualizado com sucesso")
-                return True
-            else:
-                print("Nenhum comentário encontrado com esse ID.")
-                return False
+                if cursor.rowcount > 0:
+                    print("Comentário atualizado com sucesso")
+                    return True
+                else:
+                    print("Nenhum comentário encontrado com esse ID.")
+                    return False
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
 
 def deletar_comentario(id_comentario):
     query = "DELETE FROM comentarios WHERE id = %s"
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query, (id_comentario,))
-            conexao.commit()
-            print("Comentário deletado com sucesso")
+
+    try:
+        with conexao:
+            with cursor:
+                cursor.execute(query, (id_comentario,))
+                conexao.commit()
+                print("Comentário deletado com sucesso")
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')

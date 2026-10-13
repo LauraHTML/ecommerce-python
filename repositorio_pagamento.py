@@ -1,12 +1,11 @@
 import psycopg2
 import string
 import random
+from datetime import datetime, date
 
-from utils import URL_BANCO
+from utils import conexao, cursor
 from repositorio_pedido import modificar_status_pedido
 
-conexao = psycopg2.connect(URL_BANCO)
-cursor = conexao.cursor()
 
 def listar_metodos_pagamento(id_usuario):
     query = """
@@ -65,8 +64,6 @@ def simular_pagamento(final_cartao_selecionado, id_usuario):
     except Exception as erro:
         print(f'Erro inesperado: {erro}')
 
-# simular_pagamento(1234, 1)
-
 def pagamento_cartao(id_usuario, id_pedido, metodo_pagamento, token_recebido):
     token_usuario = "SELECT token FROM meio_de_pagamento WHERE id_usuario = %s;"
     query = """
@@ -86,9 +83,12 @@ def pagamento_cartao(id_usuario, id_pedido, metodo_pagamento, token_recebido):
                 if token_banco == token_recebido:
                     cursor.execute(query, (id_usuario, id_pedido, metodo_pagamento))
                     modificar_status_pagamento(id_pedido, id_usuario, "aprovado")
+                    modificar_status_pedido(id_pedido, id_usuario, "pagamento aprovado")
                     conexao.commit()
                 cursor.execute(query, (id_usuario, id_pedido, metodo_pagamento))
                 modificar_status_pagamento(id_pedido, id_usuario, "erro")
+                modificar_status_pedido(id_pedido, id_usuario, "pendente")
+
                 conexao.commit()
 
     except TypeError as erro:
@@ -104,35 +104,35 @@ def gerar_codigo_pix(size=8, chars=string.ascii_uppercase + string.digits):
     # random.choice: resgata um caracter aleatorio
     # join: junta a string
     return ''.join(random.choice(chars) for _ in range(size))
+print(gerar_codigo_pix())
 
-# def pagamento_pix(id_usuario, id_pedido, entrada_usuario):
-#     codigo_pix = gerar_codigo_pix()
-#     pagamento_por_pix = """
-#             INSERT INTO pagamento (id_usuario, id_pedido, metodo_pagamento, codigo_pagamento, data_expiração)
-#             VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP + interval %s)
-#             RETURNING id
-#             """
-#     if id_usuario is None or id_pedido is None:
-#         print('Um dos valores está faltando: pedido, usuário')
-#         return
-#
-#     try:
-#         if entrada_usuario == "s":
-#             with conexao:
-#                 with cursor:
-#                     cursor.execute(pagamento_por_pix, (id_usuario, id_pedido, "pix", codigo_pix))
-#                     modificar_status_pagamento(id_pedido, id_usuario, "aprovado")
-#                     modificar_status_pedido(id_pedido, id_usuario, "pago")
-#                     conexao.commit()
-#         else:
-#             with conexao:
-#                 with cursor:
-#                     cursor.execute(pagamento_por_pix, (id_usuario, id_pedido, "pix", ''))
-#                     modificar_status_pagamento(id_pedido, id_usuario, "pendente")
-#                     conexao.commit()
-#
-#     except Exception as erro:
-#         print(f'Erro inesperado: {erro}')
-#         modificar_status_pagamento(id_pedido, id_usuario, "erro")
-#
-# pagamento_pix(1,7,"s")
+def pagamento_pix(id_usuario, id_pedido, entrada_usuario):
+    codigo_pix = gerar_codigo_pix()
+    pagamento_por_pix = """
+            INSERT INTO pagamento (id_usuario, id_pedido, metodo_pagamento, codigo_pagamento)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
+            """
+    if id_usuario is None or id_pedido is None:
+        print('Um dos valores está faltando: pedido, usuário')
+        return
+
+    try:
+        if entrada_usuario == "s":
+            with conexao:
+                with cursor:
+                    cursor.execute(pagamento_por_pix, (id_usuario, id_pedido, "pix", codigo_pix))
+                    modificar_status_pagamento(id_pedido, id_usuario, "aprovado")
+                    modificar_status_pedido(id_pedido, id_usuario, "pagamento aprovado")
+                    conexao.commit()
+        else:
+            with conexao:
+                with cursor:
+                    cursor.execute(pagamento_por_pix, (id_usuario, id_pedido, "pix", ''))
+                    modificar_status_pagamento(id_pedido, id_usuario, "erro")
+                    modificar_status_pedido(id_pedido, id_usuario, "pendente")
+                    conexao.commit()
+
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
+        modificar_status_pagamento(id_pedido, id_usuario, "erro")

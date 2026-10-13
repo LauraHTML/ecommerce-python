@@ -1,8 +1,5 @@
 import psycopg2
-from utils import URL_BANCO
-
-conexao = psycopg2.connect(URL_BANCO)
-cursor = conexao.cursor()
+from utils import conexao, cursor
 
 def itens_carrinho_para_pedido(id_usuario):
     calcular_preco = """
@@ -36,6 +33,8 @@ def itens_carrinho_para_pedido(id_usuario):
         print(f'Erro no banco de dados: {erro}')
     except ValueError:
         print('Valor inválido')
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
 
 def modificar_status_pedido(id_pedido, id_usuario, status_pedido):
     query = "UPDATE pedidos SET status_pedido = %s WHERE id_pedido = %s AND id_usuario = %s;"
@@ -49,3 +48,5 @@ def modificar_status_pedido(id_pedido, id_usuario, status_pedido):
         print('Valor inválido para a operação')
     except psycopg2.Error as erro:
         print(f'Erro no banco de dados: {erro}')
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')

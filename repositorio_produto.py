@@ -1,9 +1,6 @@
 import psycopg2
 
-from utils import URL_BANCO
-
-conexao = psycopg2.connect(URL_BANCO)
-cursor = conexao.cursor()
+from utils import cursor, conexao
 
 def criar_produto(nome, descricao, preco_atual, promocao, valor_promocao, quantidade, id_categoria):
     query = """
@@ -11,25 +8,39 @@ def criar_produto(nome, descricao, preco_atual, promocao, valor_promocao, quanti
         VALUES (%s,%s,%s,%s,%s,%s,%s)
         RETURNING id;
     """
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query, (nome, descricao, preco_atual, promocao, valor_promocao, quantidade, id_categoria))
-            produto_id = cursor.fetchone()[0]
-            conexao.commit()
+    try:
+        with conexao:
+            with cursor:
+                cursor.execute(query, (nome, descricao, preco_atual, promocao, valor_promocao, quantidade, id_categoria))
+                produto_id = cursor.fetchone()[0]
+                conexao.commit()
 
-            return produto_id
+                return produto_id
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+        return None
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
+        return None
 
 def buscar_produtos():
     query = "SELECT * FROM produtos ORDER BY id;"
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query)
-            produtos = cursor.fetchall()
+    try:
+        with conexao:
+            with cursor:
+                cursor.execute(query)
+                produtos = cursor.fetchall()
 
-            if not produtos:
-                return None
+                if not produtos:
+                    return []
 
-            return produtos
+                return produtos
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+        return []
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
+        return []
 
 def buscar_produto_por_id(produto_id):
     query = ("""
@@ -37,24 +48,28 @@ def buscar_produto_por_id(produto_id):
              FROM produtos p 
             INNER JOIN categorias c ON p.id_categoria = c.id WHERE p.id = %s;
              """)
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query,(produto_id,))
-            resultado = cursor.fetchone()
+    try:
+        with conexao:
+            with cursor:
+                cursor.execute(query,(produto_id,))
+                resultado = cursor.fetchone()
 
-            if not resultado:
-                return None
-            produto = {
-                "id": resultado[0],
-                "nome": resultado[1],
-                "descricao": resultado[2],
-                "preco_atual": resultado[3],
-                "promocao": resultado[4],
-                "valor_promocao": resultado[5],
-                "quantidade": resultado[6],
-                "categoria": resultado[7]
-            }
-            return produto
+                if not resultado:
+                    return None
+                produto = {
+                    "id": resultado[0],
+                    "nome": resultado[1],
+                    "descricao": resultado[2],
+                    "preco_atual": resultado[3],
+                    "promocao": resultado[4],
+                    "valor_promocao": resultado[5],
+                    "quantidade": resultado[6],
+                    "categoria": resultado[7]
+                }
+                return produto
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+        return {}
 
 def buscar_por_categoria():
     # produtos: p, categorias: c
@@ -63,28 +78,38 @@ def buscar_por_categoria():
     FROM produtos p
         INNER JOIN categorias c ON p.id_categoria = c.id 
     """
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query)
-            produtos_categorias = cursor.fetchall()
+    try:
+        with conexao:
+            with cursor:
+                cursor.execute(query)
+                produtos_categorias = cursor.fetchall()
 
-            produto_com_categoria = []
-            for linha in produtos_categorias:
-                produto_com_categoria.append({
-                    "id": linha[0],
-                    "nome_produto": linha[1],
-                    "preco": linha[2],
-                    "categoria": linha[3]
-                })
-            return produto_com_categoria
+                produto_com_categoria = []
+                for linha in produtos_categorias:
+                    produto_com_categoria.append({
+                        "id": linha[0],
+                        "nome_produto": linha[1],
+                        "preco": linha[2],
+                        "categoria": linha[3]
+                    })
+                return produto_com_categoria
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
 
 def deletar_produto(id_produto):
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
-            query = "DELETE FROM produtos WHERE id = %s"
-            cursor.execute(query, (id_produto,))
-            conexao.commit()
-            print("Produto deletado com sucesso")
+    try:
+        with conexao:
+            with cursor:
+                query = "DELETE FROM produtos WHERE id = %s"
+                cursor.execute(query, (id_produto,))
+                conexao.commit()
+                print("Produto deletado com sucesso")
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+        return {}
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
+        return {}
 
 def atualizar_produto(id_produto, nome= None, descricao= None, preco_atual= None, promocao= None, valor_promocao= None, quantidade= None, id_categoria= None):
     campos_sql = []
@@ -125,38 +150,51 @@ def atualizar_produto(id_produto, nome= None, descricao= None, preco_atual= None
     query = f"UPDATE produtos SET {campos_virgula} WHERE id = %s"
     valores.append(id_produto)
 
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query, tuple(valores))
-            conexao.commit()
+    try:
+        with conexao:
+            with cursor:
+                cursor.execute(query, tuple(valores))
+                conexao.commit()
 
-            if cursor.rowcount > 0:
-                print("Produto atualizado com sucesso!")
-                return True
-            else:
-                print("Nenhum produto encontrado com esse ID.")
-                return False
+                if cursor.rowcount > 0:
+                    print("Produto atualizado com sucesso!")
+                    return True
+                else:
+                    print("Nenhum produto encontrado com esse ID.")
+                    return False
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+        return False
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
+        return False
 
 def produtos_em_promocao():
     query = ("""
              SELECT nome, descricao, preco_atual, valor_promocao, quantidade, nome AS nome_categoria
              FROM produtos  WHERE promocao == true;
              """)
+    try:
+        with conexao:
+            with cursor:
+                cursor.execute(query)
+                produtos_promocao = cursor.fetchall()
 
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query)
-            produtos_promocao = cursor.fetchall()
-
-            produto_com_promocao = []
-            for produto in produtos_promocao:
-                produto_com_promocao.append({
-                    "id": produto[0],
-                    "nome_produto": produto[1],
-                    "preco": produto[2],
-                    "valor_promocao": produto[3]
-                })
-            return produto_com_promocao
+                produto_com_promocao = []
+                for produto in produtos_promocao:
+                    produto_com_promocao.append({
+                        "id": produto[0],
+                        "nome_produto": produto[1],
+                        "preco": produto[2],
+                        "valor_promocao": produto[3]
+                    })
+                return produto_com_promocao
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+        return []
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
+        return []
 
 def reduzir_estoque(id_produto, quantidade_retirada):
     query = ("""
@@ -173,10 +211,13 @@ def reduzir_estoque(id_produto, quantidade_retirada):
             print('Nenhum produto foi selecionado')
             return False
 
-        with psycopg2.connect(URL_BANCO) as conexao:
-            with conexao.cursor() as cursor:
+        with conexao:
+            with cursor:
                 cursor.execute(query, (quantidade_retirada, id_produto))
                 conexao.commit()
-
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+        return False
     except Exception as e:
         print(f'Erro ao reduxir o estoque: {e}')
+        return False

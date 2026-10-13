@@ -28,8 +28,10 @@ def mostrar_carrinho(usuario_id):
 
     except psycopg2.Error as erro:
         print(f'Erro no banco de dados: {erro}')
-
-# mostrar_carrinho(1)
+        return {}
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
+        return {}
 
 def adicionar_ao_carrinho(id_usuario, id_produto, quantidade):
     query = """INSERT INTO carrinho (id_usuario, id_produto, quantidade) VALUES (%s, %s, %s)
@@ -46,12 +48,13 @@ def adicionar_ao_carrinho(id_usuario, id_produto, quantidade):
                  conexao.commit()
 
         reduzir_estoque(id_produto = id_produto, quantidade_retirada= quantidade)
-        return True
 
     except psycopg2.Error as erro:
         print(f'Erro no banco de dados: {erro}')
     except ValueError:
         print('O valor inserido não é válido')
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
 
 def remover_do_carrinho(id_usuario, id_produto):
     query = """DELETE FROM carrinho WHERE id_usuario = %s AND id_produto = %s"""
@@ -61,8 +64,14 @@ def remover_do_carrinho(id_usuario, id_produto):
                 cursor.execute(query, (id_usuario, id_produto))
                 conexao.commit()
                 print('Item retirado do carrinho com sucesso')
+                return True
+
     except psycopg2.Error as erro:
         print(f'Erro no banco de dados: {erro}')
+        return False
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
+        return False
 
 def esvaziar_carrinho(id_usuario):
     resposta_usuario = input('Você tem certeza que quer excluir todos os itens do seu carrinho? (S/N): ').lower().startswith('s')
@@ -77,8 +86,13 @@ def esvaziar_carrinho(id_usuario):
 
     except psycopg2.Error as erro:
         print(f'Erro no banco de dados: {erro}')
+        return False
     except ValueError:
         print('Valor inválido')
+        return False
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
+        return False
 
 def calcular_subtotal_carrinho(id_usuario):
     query = """
@@ -103,5 +117,5 @@ def calcular_subtotal_carrinho(id_usuario):
         print(f'Erro no banco de dados: {erro}')
     except ValueError:
         print('Valor inválido')
-
-calcular_subtotal_carrinho(1)
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')

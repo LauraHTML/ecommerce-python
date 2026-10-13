@@ -1,11 +1,12 @@
 import psycopg2
-from utils import URL_BANCO
+from utils import conexao, cursor
 import bcrypt
 import string
 import random
 
-conexao = psycopg2.connect(URL_BANCO)
-cursor = conexao.cursor()
+def buscar_usuarios():
+    query = """
+    SELECT id, nome, email FROM USUARIOS WHERE perfil = 'cliente' """
 
 
 def gerar_hash(senha_em_texto):
@@ -31,8 +32,8 @@ def criar_usuario(nome, email, senha, perfil):
             VALUES (%s, %s, %s, %s)
             RETURNING id; 
             """
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
+    with conexao:
+        with cursor:
             cursor.execute(query, (nome, email, senha_usuario, perfil))
             # Pega o ID que acabou de ser gerado pelo banco
             novo_id = cursor.fetchone()[0]
@@ -43,8 +44,8 @@ def criar_usuario(nome, email, senha, perfil):
 def buscar_usuario_por_id(id_usuario):
     # Busca um usuário pelo ID e retorna um dicionário
     query = "SELECT id, nome, email, perfil FROM usuarios WHERE id = %s;"
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
+    with conexao:
+        with cursor:
             cursor.execute(query, (id_usuario,))
             resultado = cursor.fetchone()
 
@@ -93,8 +94,8 @@ def atualizar_usuario(id_usuario, nome=None, email=None, senha=None):
                 return False
 
 def deletar_usuario(id_usuario):
-    with psycopg2.connect(URL_BANCO) as conexao:
-        with conexao.cursor() as cursor:
+    with conexao:
+        with cursor:
             query = "DELETE FROM usuarios WHERE id = %s"
             cursor.execute(query, (id_usuario,))
             conexao.commit()
@@ -108,25 +109,12 @@ def gerar_token(size=6, chars=string.ascii_uppercase + string.digits):
     # join: junta a string
     return ''.join(random.choice(chars) for _ in range(size))
 
-# print(gerar_token())
-
-# def criar_sessao(id_usuario):
-#     query = "INSERT INTO sessoes (id_usuario, token_sessao) VALUES (%s, %s);"
-#     token = gerar_token()
-#     try:
-#         with psycopg2.connect(URL_BANCO) as conexao:
-#             with conexao.cursor() as cursor:
-#                 cursor.execute(query, (id_usuario, token))
-#                 conexao.commit()
-#     except Exception as e:
-#         print(f'Error ao criar sessão: {e}')
-
 # validar credenciais
 def login(email, senha):
     try:
         query = "SELECT * FROM public.usuarios WHERE email = %s ;"
-        with psycopg2.connect(URL_BANCO) as conexao:
-            with conexao.cursor() as cursor:
+        with conexao:
+            with cursor:
                 cursor.execute(query, (email,))
                 usuario_encontrado = cursor.fetchone()
                 if usuario_encontrado is None:
@@ -152,8 +140,8 @@ def validar_sessao(token):
     query = "SELECT * FROM sessoes WHERE token_sessao = %s;"
 
     try:
-        with psycopg2.connect(URL_BANCO) as conexao:
-            with conexao.cursor() as cursor:
+        with conexao:
+            with cursor:
                 cursor.execute(query, (token,))
 
                 sessao_encontrada = cursor.fetchone()
