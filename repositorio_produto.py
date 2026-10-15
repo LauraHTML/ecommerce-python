@@ -1,8 +1,7 @@
 import psycopg2
-
 from utils import cursor, conexao
 
-def criar_produto(nome, descricao, preco_atual, promocao, valor_promocao, quantidade, id_categoria):
+def repositorio_criar_produto(nome, descricao, preco_atual, promocao, valor_promocao, quantidade, id_categoria):
     query = """
     INSERT INTO produtos (nome, descricao, preco_atual, promocao, valor_promocao, quantidade, id_categoria)
         VALUES (%s,%s,%s,%s,%s,%s,%s)
@@ -23,7 +22,7 @@ def criar_produto(nome, descricao, preco_atual, promocao, valor_promocao, quanti
         print(f'Erro inesperado: {erro}')
         return None
 
-def buscar_produtos():
+def repositorio_buscar_produtos():
     query = "SELECT * FROM produtos ORDER BY id;"
     try:
         with conexao:
@@ -42,7 +41,7 @@ def buscar_produtos():
         print(f'Erro inesperado: {erro}')
         return []
 
-def buscar_produto_por_id(produto_id):
+def repositorio_buscar_produto_por_id(produto_id):
     query = ("""
              SELECT p.nome, p.descricao, p.preco_atual, p.valor_promocao, p.quantidade, c.nome AS nome_categoria 
              FROM produtos p 
@@ -71,7 +70,7 @@ def buscar_produto_por_id(produto_id):
         print(f'Erro no banco de dados: {erro}')
         return {}
 
-def buscar_por_categoria():
+def repositorio_buscar_por_categoria():
     # produtos: p, categorias: c
     query = """
     SELECT p.id, p.nome, p.preco, c.nome AS nome_categoria
@@ -96,7 +95,7 @@ def buscar_por_categoria():
     except psycopg2.Error as erro:
         print(f'Erro no banco de dados: {erro}')
 
-def deletar_produto(id_produto):
+def repositorio_deletar_produto(id_produto):
     try:
         with conexao:
             with cursor:
@@ -111,7 +110,7 @@ def deletar_produto(id_produto):
         print(f'Erro inesperado: {erro}')
         return {}
 
-def atualizar_produto(id_produto, nome= None, descricao= None, preco_atual= None, promocao= None, valor_promocao= None, quantidade= None, id_categoria= None):
+def repositorio_atualizar_produto(id_produto, nome= None, descricao= None, preco_atual= None, promocao= None, valor_promocao= None, quantidade= None, id_categoria= None):
     campos_sql = []
     valores = []
 
