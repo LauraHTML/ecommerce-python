@@ -1,4 +1,4 @@
-from utils import conexao, cursor
+from utils import conexao
 import psycopg2
 from repositorio_produto import reduzir_estoque
 
@@ -10,7 +10,7 @@ def mostrar_carrinho(usuario_id):
             """
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (usuario_id,))
                 carrinhos = cursor.fetchall()
 
@@ -43,7 +43,7 @@ def adicionar_ao_carrinho(id_usuario, id_produto, quantidade):
         if quantidade <= 0:
             print('Quantidade de produtos inválido')
         with conexao:
-             with cursor:
+             with conexao.cursor() as cursor:
                  cursor.execute(query, (id_usuario, id_produto, quantidade))
                  conexao.commit()
 
@@ -60,7 +60,7 @@ def remover_do_carrinho(id_usuario, id_produto):
     query = """DELETE FROM carrinho WHERE id_usuario = %s AND id_produto = %s"""
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (id_usuario, id_produto))
                 conexao.commit()
                 print('Item retirado do carrinho com sucesso')
@@ -79,7 +79,7 @@ def esvaziar_carrinho(id_usuario):
     try:
         if resposta_usuario:
             with conexao:
-                with cursor:
+                with conexao.cursor() as cursor:
                     cursor.execute(query, (id_usuario,))
                     conexao.commit()
                     print('Carrinho esvaziado com sucesso')
@@ -103,7 +103,7 @@ def calcular_subtotal_carrinho(id_usuario):
     """
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (id_usuario,))
                 calculo_subtotal_compra = cursor.fetchone()
                 subtotal_compra = round(calculo_subtotal_compra[0], 2)

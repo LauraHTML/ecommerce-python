@@ -18,4 +18,3 @@ def opcao_invalida():
 
 URL_BANCO = os.getenv("URL_SUPABASE")
 conexao = psycopg2.connect(URL_BANCO)
-cursor = conexao.cursor()

@@ -1,9 +1,8 @@
 import psycopg2
 import string
 import random
-from datetime import datetime, date
 
-from utils import conexao, cursor
+from utils import conexao
 from repositorio_pedido import modificar_status_pedido
 
 
@@ -13,7 +12,7 @@ def listar_metodos_pagamento(id_usuario):
     """
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (id_usuario,))
                 metodos_pagamento = cursor.fetchall()
 
@@ -38,7 +37,7 @@ def modificar_status_pagamento(id_pedido, id_usuario, status_pagamento):
     query = "UPDATE pagamento SET status_pagamento = %s WHERE id_pedido = %s AND id_usuario = %s;"
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (status_pagamento, id_pedido, id_usuario))
                 conexao.commit()
 
@@ -52,7 +51,7 @@ def simular_pagamento(final_cartao_selecionado, id_usuario):
 
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (id_usuario,))
                 final_cartao_banco = cursor.fetchone()
                 print(final_cartao_banco)
@@ -76,7 +75,7 @@ def pagamento_cartao(id_usuario, id_pedido, metodo_pagamento, token_recebido):
         return
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(token_usuario, (id_usuario,))
                 token_banco = cursor.fetchone()
 
@@ -118,16 +117,14 @@ def pagamento_pix(id_usuario, id_pedido, entrada_usuario):
         return
 
     try:
-        if entrada_usuario == "s":
-            with conexao:
-                with cursor:
+        with conexao:
+            with conexao.cursor() as cursor:
+                if entrada_usuario == "s":
                     cursor.execute(pagamento_por_pix, (id_usuario, id_pedido, "pix", codigo_pix))
                     modificar_status_pagamento(id_pedido, id_usuario, "aprovado")
                     modificar_status_pedido(id_pedido, id_usuario, "pagamento aprovado")
                     conexao.commit()
-        else:
-            with conexao:
-                with cursor:
+                else:
                     cursor.execute(pagamento_por_pix, (id_usuario, id_pedido, "pix", ''))
                     modificar_status_pagamento(id_pedido, id_usuario, "erro")
                     modificar_status_pedido(id_pedido, id_usuario, "pendente")

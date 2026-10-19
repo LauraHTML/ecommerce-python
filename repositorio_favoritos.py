@@ -1,6 +1,6 @@
 import psycopg2
 
-from utils import cursor, conexao
+from utils import conexao
 
 def criar_lista_favoritos(id_produto, id_usuario):
     query = """
@@ -10,7 +10,7 @@ def criar_lista_favoritos(id_produto, id_usuario):
             """
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (id_usuario, id_produto))
                 produto_favorito = cursor.fetchone()[0]
                 conexao.commit()
@@ -23,7 +23,7 @@ def listar_favoritos(id_usuario):
     query = "SELECT * FROM favoritos where id_usuario = %s ORDER BY data_criacao DESC;"
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, id_usuario)
                 produtos = cursor.fetchall()
 
@@ -39,7 +39,7 @@ def deletar_produto_favoritado(id_produto):
     """
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (id_produto,))
                 conexao.commit()
                 print("Produto excluido da lista de favoritos com sucesso")

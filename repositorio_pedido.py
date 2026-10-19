@@ -1,12 +1,15 @@
 import psycopg2
-from utils import conexao, cursor
+from utils import conexao
+
+# def listar_pedidos():
+#     query = "SELECT "
 
 def itens_carrinho_para_pedido(id_usuario):
     calcular_preco = """
             SELECT SUM(c.quantidade * p.preco_atual)
             FROM carrinho c
                      INNER JOIN produtos p ON p.id = c.id_produto
-            WHERE c.id_usuario = %s \
+            WHERE c.id_usuario = %s;
             """
     criar_pedido = "INSERT INTO pedidos (id_usuario, valor_total) VALUES (%s, %s) RETURNING id;"
     itens_pedido = ("""INSERT INTO itens_pedido (id_pedido, id_produto, quantidade, preco_unitario)
@@ -14,10 +17,10 @@ def itens_carrinho_para_pedido(id_usuario):
                        FROM carrinho c
                                 INNER JOIN produtos p ON p.id = c.id_produto
                        WHERE c.id_usuario = %s;""")
-    esvaziar_carrinho = "DELETE FROM carrinho WHERE id_usuario = %s"
+    esvaziar_carrinho = "DELETE FROM carrinho WHERE id_usuario = %s;"
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(calcular_preco, (id_usuario,))
                 resultado = cursor.fetchone()
                 valor_total = round(resultado[0],2) or 0
@@ -36,16 +39,31 @@ def itens_carrinho_para_pedido(id_usuario):
     except Exception as erro:
         print(f'Erro inesperado: {erro}')
 
-def modificar_status_pedido(id_pedido, id_usuario, status_pedido):
-    query = "UPDATE pedidos SET status_pedido = %s WHERE id_pedido = %s AND id_usuario = %s;"
+def modificar_status_pedido(id_pedido, status_pedido):
+    query = "UPDATE pedidos SET status_pedido = %s WHERE id_pedido = %s;"
     try:
         with conexao:
-            with cursor:
-                cursor.execute(query, (status_pedido, id_pedido, id_usuario))
+            with conexao.cursor() as cursor:
+                cursor.execute(query, (status_pedido, id_pedido))
                 conexao.commit()
 
     except TypeError:
         print('Valor inválido para a operação')
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
+
+def buscar_pedido(id_pedido):
+    query = "SELECT * FROM pedidos WHERE id_pedido = %s;"
+    try:
+        with conexao:
+            with conexao.cursor() as cursor:
+                cursor.execute(query,id_pedido)
+                pedido = cursor.fetchone()
+                conexao.commit()
+                return pedido
+
     except psycopg2.Error as erro:
         print(f'Erro no banco de dados: {erro}')
     except Exception as erro:

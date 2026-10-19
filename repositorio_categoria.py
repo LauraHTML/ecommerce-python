@@ -1,6 +1,6 @@
 import psycopg2
 
-from utils import cursor, conexao
+from utils import conexao
 
 def criar_categoria(nome, descricao):
     query = """
@@ -8,7 +8,7 @@ def criar_categoria(nome, descricao):
     """
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (nome, descricao))
                 categoria_id = cursor.fetchone()[0]
                 conexao.commit()
@@ -26,7 +26,7 @@ def buscar_categorias():
     query = "SELECT * FROM categorias ORDER BY id;"
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query)
                 categorias = cursor.fetchall()
 
@@ -45,7 +45,7 @@ def buscar_categoria_por_id(id_categoria):
     query = "SELECT (nome, descricao) FROM categorias WHERE id = %s;"
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (id_categoria,))
                 categoria = cursor.fetchone()
                 if not categoria:
@@ -61,7 +61,7 @@ def buscar_categoria_por_id(id_categoria):
 def deletar_categoria(id_categoria):
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 query = "DELETE FROM categorias WHERE id = %s"
                 cursor.execute(query, (id_categoria,))
                 conexao.commit()

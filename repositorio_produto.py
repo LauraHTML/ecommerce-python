@@ -1,5 +1,5 @@
 import psycopg2
-from utils import cursor, conexao
+from utils import conexao
 
 def repositorio_criar_produto(nome, descricao, preco_atual, promocao, valor_promocao, quantidade, id_categoria):
     query = """
@@ -9,7 +9,7 @@ def repositorio_criar_produto(nome, descricao, preco_atual, promocao, valor_prom
     """
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (nome, descricao, preco_atual, promocao, valor_promocao, quantidade, id_categoria))
                 produto_id = cursor.fetchone()[0]
                 conexao.commit()
@@ -26,7 +26,7 @@ def repositorio_buscar_produtos():
     query = "SELECT * FROM produtos ORDER BY id;"
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query)
                 produtos = cursor.fetchall()
 
@@ -49,7 +49,7 @@ def repositorio_buscar_produto_por_id(produto_id):
              """)
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query,(produto_id,))
                 resultado = cursor.fetchone()
 
@@ -79,7 +79,7 @@ def repositorio_buscar_por_categoria():
     """
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query)
                 produtos_categorias = cursor.fetchall()
 
@@ -98,7 +98,7 @@ def repositorio_buscar_por_categoria():
 def repositorio_deletar_produto(id_produto):
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 query = "DELETE FROM produtos WHERE id = %s"
                 cursor.execute(query, (id_produto,))
                 conexao.commit()
@@ -151,7 +151,7 @@ def repositorio_atualizar_produto(id_produto, nome= None, descricao= None, preco
 
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, tuple(valores))
                 conexao.commit()
 
@@ -175,7 +175,7 @@ def produtos_em_promocao():
              """)
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query)
                 produtos_promocao = cursor.fetchall()
 
@@ -211,7 +211,7 @@ def reduzir_estoque(id_produto, quantidade_retirada):
             return False
 
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (quantidade_retirada, id_produto))
                 conexao.commit()
     except psycopg2.Error as erro:

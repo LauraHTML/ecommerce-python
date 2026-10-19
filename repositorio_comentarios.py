@@ -1,6 +1,6 @@
 import psycopg2
 
-from utils import conexao, cursor
+from utils import conexao
 
 def criar_comentario(id_usuario, id_produto, texto, promocao, valor_nota, img_url, data_criacao):
     query = """
@@ -10,7 +10,7 @@ def criar_comentario(id_usuario, id_produto, texto, promocao, valor_nota, img_ur
             """
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (id_usuario, id_produto, texto, promocao, valor_nota, img_url, data_criacao))
                 comentario_id = cursor.fetchone()[0]
                 conexao.commit()
@@ -27,7 +27,7 @@ def ordenar_comentarios():
     query = "SELECT * FROM comentarios ORDER BY data_criacao DESC;"
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query)
                 comentarios = cursor.fetchall()
                 if not comentarios:
@@ -64,7 +64,7 @@ def atualizar_comentario(id_comentario, id_produto, valor_nota, texto=None, img_
 
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, tuple(valores))
                 conexao.commit()
 
@@ -84,7 +84,7 @@ def deletar_comentario(id_comentario):
 
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (id_comentario,))
                 conexao.commit()
                 print("Comentário deletado com sucesso")

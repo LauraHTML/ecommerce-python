@@ -1,5 +1,5 @@
 import psycopg2
-from utils import conexao, cursor
+from utils import conexao
 import bcrypt
 import string
 import random
@@ -7,7 +7,42 @@ import random
 def buscar_usuarios():
     query = """
     SELECT id, nome, email FROM USUARIOS WHERE perfil = 'cliente' """
+    try:
+        with conexao:
+            with conexao.cursor() as cursor:
+                cursor.execute(query,)
+                # Pega o ID que acabou de ser gerado pelo banco
+                usuarios = cursor.fetchall()
+                conexao.commit()
 
+                return usuarios
+
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+        return False
+    except Exception as erro:
+        print(f'Ocorreu um erro ao buscar usuários: {erro}')
+
+
+def usuarios_pedido_pendente():
+    query = """
+    SELECT p.id, u.nome, p.data_pedido, p.status_pedido, p.valor_total FROM usuarios u
+        INNER JOIN pedidos p ON p.id_usuario = u.id
+        WHERE p.status_pedido = 'pendente'
+    """
+    try:
+        with conexao:
+            with conexao.cursor() as cursor:
+                cursor.execute(query,)
+                pedidos_pendentes = cursor.fetchall()
+                conexao.commit()
+
+                return pedidos_pendentes
+
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+    except Exception as erro:
+        print(f'Ocorreu um erro ao buscar os pedidos pendentes: {erro}')
 
 def gerar_hash(senha_em_texto):
     # Converte a string para bytes
@@ -33,7 +68,7 @@ def criar_usuario(nome, email, senha, perfil):
             RETURNING id; 
             """
     with conexao:
-        with cursor:
+        with conexao.cursor() as cursor:
             cursor.execute(query, (nome, email, senha_usuario, perfil))
             # Pega o ID que acabou de ser gerado pelo banco
             novo_id = cursor.fetchone()[0]
@@ -45,7 +80,7 @@ def buscar_usuario_por_id(id_usuario):
     # Busca um usuário pelo ID e retorna um dicionário
     query = "SELECT id, nome, email, perfil FROM usuarios WHERE id = %s;"
     with conexao:
-        with cursor:
+        with conexao.cursor() as cursor:
             cursor.execute(query, (id_usuario,))
             resultado = cursor.fetchone()
 
@@ -81,7 +116,7 @@ def atualizar_usuario(id_usuario, nome=None, email=None, senha=None):
     query = f"UPDATE usuarios SET {campos_virgula} WHERE id = %s"
     valores.append(id_usuario)
 
-    with psycopg2.connect(URL_BANCO) as conexao:
+    with  conexao:
         with conexao.cursor() as cursor:
             cursor.execute(query, tuple(valores))
             conexao.commit()
@@ -95,7 +130,7 @@ def atualizar_usuario(id_usuario, nome=None, email=None, senha=None):
 
 def deletar_usuario(id_usuario):
     with conexao:
-        with cursor:
+        with conexao.cursor() as cursor:
             query = "DELETE FROM usuarios WHERE id = %s"
             cursor.execute(query, (id_usuario,))
             conexao.commit()
@@ -114,7 +149,7 @@ def login(email, senha):
     try:
         query = "SELECT * FROM public.usuarios WHERE email = %s ;"
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (email,))
                 usuario_encontrado = cursor.fetchone()
                 if usuario_encontrado is None:
@@ -141,7 +176,7 @@ def validar_sessao(token):
 
     try:
         with conexao:
-            with cursor:
+            with conexao.cursor() as cursor:
                 cursor.execute(query, (token,))
 
                 sessao_encontrada = cursor.fetchone()

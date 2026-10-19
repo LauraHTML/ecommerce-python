@@ -4,7 +4,8 @@ from usuario import sair_da_conta
 # verificar se entrada correponse a um padrão especifico
 import re
 from repositorio_produto import repositorio_criar_produto, repositorio_buscar_produtos, repositorio_deletar_produto, repositorio_atualizar_produto
-from datetime import datetime, timedelta
+from repositorio_usuario import usuarios_pedido_pendente
+from repositorio_pedido import modificar_status_pedido, buscar_pedido
 
 email_padrao = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
 
@@ -70,12 +71,37 @@ def atualizar_produto():
         repositorio_atualizar_produto(id_produto, nome_produto,descricao, preco, promocao, verificacao_desconto, estoque, id_categoria)
 
     except ValueError as erro:
-        print(f'Erro ao criar produto: {erro}')
+        print(f'Ocorreu um erro ao criar produto: {erro}')
         opcao_invalida()
     except Exception as erro:
-        print(f'Erro ao deletar produto: {erro}')
+        print(f'Ocorreu um erro ao deletar produto: {erro}')
         opcao_invalida()
 
+# listar pedidos
+
+# separar pedido
+def separar_pedido():
+    try:
+        print('Pedidos de usuários pendentes: ')
+        pedidos_pendentes = usuarios_pedido_pendente()
+        if not pedidos_pendentes:
+            print('Nenhum pedido está pendente')
+            return []
+        for pedido in pedidos_pendentes:
+            print({
+                "id_pedido": pedido[0],
+                "nome_usuario": pedido[1],
+                "data_pedido": pedido[2].strftime("%d/%m/%Y"),
+                "valor_total": pedido[4],
+                "status_pedido": pedido[3]
+            })
+        id_pedido = int(input('Insira o ID do pedido: '))
+        modificar_status_pedido(id_pedido, 'pedido separado')
+        buscar_pedido(id_pedido)
+
+    except Exception as erro:
+        print(f'Ocorreu um erro ao separar pedido: {erro}')
+separar_pedido()
 
 def menu_funcionario():
     try:
@@ -83,8 +109,10 @@ def menu_funcionario():
             print(f'{corPadrao}1.{fundoPadrao} Lista de produtos')
             print(f'{corPadrao}2.{fundoPadrao} Adicionar produto')
             print(f'{corPadrao}3.{fundoPadrao} Excluir produto')
-            print(f'{corPadrao}4{fundoPadrao} Atualizar produto')
-            print(f'{corPadrao}5.{fundoPadrao} Sair\n')
+            print(f'{corPadrao}4.{fundoPadrao} Atualizar produto')
+            print(f'{corPadrao}5.{fundoPadrao} Separar pedido')
+            print(f'{corPadrao}6.{fundoPadrao} Ver pedidos')
+            print(f'{corPadrao}7.{fundoPadrao} Sair\n')
             opcao_usuario = input("Escolha uma opção: ")
             match opcao_usuario:
                 case "1":
@@ -95,8 +123,12 @@ def menu_funcionario():
                 case "3":
                     excluir_produto()
                 case "4":
-
+                    atualizar_produto()
                 case "5":
+                    separar_pedido()
+                case "6":
+                    print("pedidos")
+                case "7":
                     print('Saindo...')
                     sair_da_conta()
                     voltar_ao_menu_principal()
