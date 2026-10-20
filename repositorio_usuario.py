@@ -2,7 +2,13 @@ import psycopg2
 from utils import conexao
 import bcrypt
 import string
-import random
+import secrets
+import json
+import os
+from datetime import datetime, timedelta
+
+SESSAO_ATUAL = 'sessao_atual.json'
+TOKEN_BYTES = 32
 
 def buscar_usuarios():
     query = """
@@ -22,7 +28,6 @@ def buscar_usuarios():
         return False
     except Exception as erro:
         print(f'Ocorreu um erro ao buscar usuários: {erro}')
-
 
 def usuarios_pedido_pendente():
     query = """
@@ -53,7 +58,6 @@ def gerar_hash(senha_em_texto):
     senha_hash = bcrypt.hashpw(senha_bytes, salt)
     return senha_hash
 
-
 def verificar_senha(senha_texto, senha_hash):
     senha_texto_byte = senha_texto.encode('utf-8')
     senha_hash_byte = senha_hash.encode('utf-8')
@@ -83,7 +87,7 @@ def criar_usuario(nome, email, senha, perfil):
     except Exception as erro:
         print(f'Erro inesperado: {erro}')
 
-def buscar_usuario_por_id(id_usuario):
+def buscar_usuario(id_usuario):
     # Busca um usuário pelo ID e retorna um dicionário
     query = "SELECT id, nome, email, perfil FROM usuarios WHERE id = %s;"
     try:
@@ -164,13 +168,49 @@ def deletar_usuario(id_usuario):
     except Exception as erro:
         print(f'Erro inesperado: {erro}')
 
-def gerar_token(size=6, chars=string.ascii_uppercase + string.digits):
-    # ascii_uppercase: todas as letras em maiusculo
-    # string.digits: uma string com numeros
-    # chars: lista de caracteres contendo numeros e letras
-    # random.choice: resgata um caracter aleatorio
-    # join: junta a string
-    return ''.join(random.choice(chars) for _ in range(size))
+def gerar_token():
+    token = secrets.token_urlsafe(TOKEN_BYTES)
+    return token
+
+data = datetime.now()
+print(data)
+
+def criar_sessao_json(usuario_id, usuario_perfil):
+    data_expiracao = datetime.now()
+    dados_sessao = {
+        "usuario_id": usuario_id,
+        "expira_em": data_expiracao,
+        "perfil": usuario_perfil
+    }
+    try:
+        with open(SESSAO_ATUAL, "w", encoding="utf-8") as arquivo:
+            json.dump(dados_sessao, arquivo)
+    except FileNotFoundError:
+        print('O arquivo não foi encontrado')
+
+def ler_sessao():
+    try:
+        with open(SESSAO_ATUAL, "r", encoding="utf-8") as arquivo:
+            return json.load(arquivo)
+    except FileNotFoundError:
+        print('Arquivo não encontrado')
+        return False
+
+def excluir_sessao(id_usuario):
+    query = "DELETE FROM sessoes WHERE id_usuario = %s;"
+    try:
+        os.remove(SESSAO_ATUAL)
+        with conexao:
+            with conexao.cursor() as cursor:
+                cursor.execute(query,id_usuario)
+        print("Você saiu da sua conta com sucesso")
+
+    except FileNotFoundError:
+        print("Nenhuma sessão ativa")
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+    except Exception as erro:
+        print(f'Erro inesperado ao sair da conta: {erro}')
 
 # validar credenciais
 def login(email, senha):
@@ -190,29 +230,42 @@ def login(email, senha):
                 token = gerar_token()
 
                 criar_sessao = "INSERT INTO sessoes (id_usuario, token_sessao) VALUES (%s, %s);"
+                criar_sessao_json(id_usuario, token)
                 cursor.execute(criar_sessao, (id_usuario, token))
-                return token
+                return id_usuario
             else:
                 print('A senha digitada está incorreta')
             conexao.commit()
-
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
     except Exception as erro:
         print(f'Erro ao logar: {erro}')
 
-def validar_sessao(token):
-    query = "SELECT * FROM sessoes WHERE token_sessao = %s;"
-
+def validar_sessao(id_usuario):
+    query = "SELECT id_usuario, token_sessao, data_criacao FROM sessoes WHERE token_sessao = %s AND id_usuario = %s;"
+    sessao_json = ler_sessao()
+    data_expiracao = sessao_json["expira_em"]
+    data_atual = datetime.now()
     try:
         with conexao:
             with conexao.cursor() as cursor:
-                cursor.execute(query, (token,))
-
+                cursor.execute(query, id_usuario)
                 sessao_encontrada = cursor.fetchone()
 
+                if data_expiracao < data_atual:
+                    print("Sessão expirada. Faça login novamente")
+                    return False
                 if sessao_encontrada is None:
                     print('O usuário não está logado')
-                usuario_id = sessao_encontrada[1]
-                return usuario_id
+                    return False
+                if id_usuario != sessao_encontrada[0]:
+                    return False
+                else:
+                    return sessao_json
+    except FileNotFoundError:
+        print("Nenhuma sessão ativa. Por favor, faça o login.")
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
     except Exception as erro:
         print(f'Erro ao validar sessão: {erro}')
         return None

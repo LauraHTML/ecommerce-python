@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 import os
 import psycopg2
-
 load_dotenv()
 
 def voltar_ao_menu_principal():
@@ -15,6 +14,9 @@ def finalizar_app():
 def opcao_invalida():
     print('Opção inválida!\n')
     voltar_ao_menu_principal()
+
+def verificar_sessao():
+    print('Verificar sessão')
 
 URL_BANCO = os.getenv("URL_SUPABASE")
 conexao = psycopg2.connect(URL_BANCO)

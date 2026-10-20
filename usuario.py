@@ -2,7 +2,7 @@ import json
 from utils import voltar_ao_menu_principal, opcao_invalida, finalizar_app
 # verificar se entrada correponse a um padrão especifico
 import re
-from repositorio_usuario import criar_usuario, login
+from repositorio_usuario import criar_usuario, login, validar_sessao, ler_sessao
 from repositorio_produto import produtos_em_promocao, repositorio_buscar_produtos
 from repositorio_carrinho import adicionar_ao_carrinho
 
@@ -20,7 +20,7 @@ class InputError(Exception):
 
 
 def cadastrar_usuario():
-    print(f'{fundoPadrao} Cadastro do usuario {corPadrao}')
+    print(f'{fundoPadrao}Cadastro do usuario {corPadrao}')
     try:
         nome: str = input('Insira o seu nome: ').strip()
         if not nome or not nome.replace(" ", "").isalpha():
@@ -63,6 +63,14 @@ def logar_usuario():
         print(f'Insira um valor válido: {erro}')
 
 # .strip() tira \n
+def sessao_atual():
+    try:
+        sessao_json = ler_sessao()
+        print(sessao_json)
+
+    except FileNotFoundError:
+        print("Nenhuma sessão ativa. Por favor, faça o login.")
+
 
 def menu_cliente():
     try:
