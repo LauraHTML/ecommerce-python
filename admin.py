@@ -1,20 +1,10 @@
-import json
 from utils import voltar_ao_menu_principal, opcao_invalida, finalizar_app
-from usuario import sair_da_conta
-# verificar se entrada correponse a um padrão especifico
-import re
 from repositorio_produto import repositorio_criar_produto, repositorio_buscar_produtos, repositorio_deletar_produto, repositorio_atualizar_produto
 from repositorio_usuario import usuarios_pedido_pendente
 from repositorio_pedido import modificar_status_pedido, buscar_pedido
 
-email_padrao = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
-
 fundoPadrao = '\033[0;0m'
 corPadrao = '\033[1;35m'
-
-ARQUIVO = "usuarios.json"
-SESSAO_ATUAL='sessao_atual.json'
-
 
 # ERRROSS:
 class InputError(Exception):
@@ -130,7 +120,6 @@ def menu_funcionario():
                     print("pedidos")
                 case "7":
                     print('Saindo...')
-                    sair_da_conta()
                     voltar_ao_menu_principal()
                 case _:
                     print("Opção inválida")

@@ -67,34 +67,48 @@ def criar_usuario(nome, email, senha, perfil):
             VALUES (%s, %s, %s, %s)
             RETURNING id; 
             """
-    with conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query, (nome, email, senha_usuario, perfil))
-            # Pega o ID que acabou de ser gerado pelo banco
-            novo_id = cursor.fetchone()[0]
-            conexao.commit()
+    try:
+        with conexao:
+            with conexao.cursor() as cursor:
+                cursor.execute(query, (nome, email, senha_usuario, perfil))
+                # Pega o ID que acabou de ser gerado pelo banco
+                novo_id = cursor.fetchone()[0]
+                conexao.commit()
 
-            return novo_id
+                return novo_id
+    except TypeError:
+        print('Valor inválido para a operação')
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
 
 def buscar_usuario_por_id(id_usuario):
     # Busca um usuário pelo ID e retorna um dicionário
     query = "SELECT id, nome, email, perfil FROM usuarios WHERE id = %s;"
-    with conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query, (id_usuario,))
-            resultado = cursor.fetchone()
+    try:
+        with conexao:
+            with conexao.cursor() as cursor:
+                cursor.execute(query, (id_usuario,))
+                resultado = cursor.fetchone()
 
-            # Se não encontrar ninguém retorna None
-            if not resultado:
-                return None
-            # Se encontrar converte a tupla do banco de volta para um dicionário
-            usuario = {
-                "id": resultado[0],
-                "nome": resultado[1],
-                "email": resultado[2],
-                "perfil": resultado[3]
-            }
-            return usuario
+                # Se não encontrar ninguém retorna None
+                if not resultado:
+                    return None
+                # Se encontrar converte a tupla do banco de volta para um dicionário
+                usuario = {
+                    "id": resultado[0],
+                    "nome": resultado[1],
+                    "email": resultado[2],
+                    "perfil": resultado[3]
+                }
+                return usuario
+    except TypeError:
+        print('Valor inválido para a operação')
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
 
 def atualizar_usuario(id_usuario, nome=None, email=None, senha=None):
     campos_sql = []
@@ -116,25 +130,39 @@ def atualizar_usuario(id_usuario, nome=None, email=None, senha=None):
     query = f"UPDATE usuarios SET {campos_virgula} WHERE id = %s"
     valores.append(id_usuario)
 
-    with  conexao:
-        with conexao.cursor() as cursor:
-            cursor.execute(query, tuple(valores))
-            conexao.commit()
+    try:
+        with  conexao:
+            with conexao.cursor() as cursor:
+                cursor.execute(query, tuple(valores))
+                conexao.commit()
 
-            if cursor.rowcount > 0:
-                print("Usuário atualizado com sucesso no banco de dados!")
-                return True
-            else:
-                print("Nenhum usuário encontrado com esse ID.")
-                return False
+                if cursor.rowcount > 0:
+                    print("Usuário atualizado com sucesso no banco de dados!")
+                    return True
+                else:
+                    print("Nenhum usuário encontrado com esse ID.")
+                    return False
+    except TypeError:
+        print('Valor inválido para a operação')
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
 
 def deletar_usuario(id_usuario):
-    with conexao:
-        with conexao.cursor() as cursor:
-            query = "DELETE FROM usuarios WHERE id = %s"
-            cursor.execute(query, (id_usuario,))
-            conexao.commit()
-            print("Usuário deletado com sucesso")
+    try:
+        with conexao:
+            with conexao.cursor() as cursor:
+                query = "DELETE FROM usuarios WHERE id = %s"
+                cursor.execute(query, (id_usuario,))
+                conexao.commit()
+                print("Usuário deletado com sucesso")
+    except TypeError:
+        print('Valor inválido para a operação')
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
 
 def gerar_token(size=6, chars=string.ascii_uppercase + string.digits):
     # ascii_uppercase: todas as letras em maiusculo
@@ -168,8 +196,8 @@ def login(email, senha):
                 print('A senha digitada está incorreta')
             conexao.commit()
 
-    except Exception as e:
-        print(f'Erro ao logar: {e}')
+    except Exception as erro:
+        print(f'Erro ao logar: {erro}')
 
 def validar_sessao(token):
     query = "SELECT * FROM sessoes WHERE token_sessao = %s;"
@@ -185,6 +213,21 @@ def validar_sessao(token):
                     print('O usuário não está logado')
                 usuario_id = sessao_encontrada[1]
                 return usuario_id
-    except Exception as e:
-        print(f'Erro ao validar sessão: {e}')
+    except Exception as erro:
+        print(f'Erro ao validar sessão: {erro}')
         return None
+
+def sair_da_conta(id_usuario):
+    query = "DELETE FROM sessoes where id = %s"
+    try:
+        with conexao:
+            with conexao.cursor() as cursor:
+                cursor.execute(query, (id_usuario,))
+                conexao.commit()
+
+    except TypeError:
+        print('Valor inválido para a operação')
+    except psycopg2.Error as erro:
+        print(f'Erro no banco de dados: {erro}')
+    except Exception as erro:
+        print(f'Erro inesperado: {erro}')
