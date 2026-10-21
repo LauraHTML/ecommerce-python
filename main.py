@@ -3,6 +3,7 @@ corNumerosPadrao = '\033[1;35m'
 
 from utils import voltar_ao_menu_principal
 from usuario import logar_usuario, cadastrar_usuario, menu_cliente
+from repositorio_usuario import validar_sessao
 
 def finalizar_app():
     print('Finalizar app')
@@ -23,7 +24,7 @@ def menu_principal():
             match escolha_menu:
                 case "1":
                     id_usuario = logar_usuario()
-                    menu_cliente()
+                    menu_cliente(id_usuario)
                 case "2":
                     cadastrar_usuario()
                 case "3":
@@ -38,8 +39,12 @@ def menu_principal():
         print('\nPrograma finalizado com sucesso')
 
 def main():
-    print('E-commerce python')
-    menu_principal()
+    sessao_atual = validar_sessao()
+    if sessao_atual:
+        print('E-commerce python')
+        menu_cliente(sessao_atual["id_usuario"])
+    else:
+        menu_principal()
 
 if __name__ == '__main__':
     main()

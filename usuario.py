@@ -4,7 +4,7 @@ from utils import voltar_ao_menu_principal, opcao_invalida, finalizar_app
 import re
 from repositorio_usuario import criar_usuario, login, validar_sessao, ler_sessao
 from repositorio_produto import produtos_em_promocao, repositorio_buscar_produtos
-from repositorio_carrinho import adicionar_ao_carrinho
+from repositorio_carrinho import repositorio_adicionar_ao_carrinho
 
 from datetime import datetime, timedelta
 
@@ -18,6 +18,18 @@ class InputError(Exception):
     """Valores de input errados: email já existe, senha curta"""
     pass
 
+def listar_produtos():
+    produtos = repositorio_buscar_produtos()
+    print(f'{corPadrao}Produtos:{fundoPadrao}')
+    for produto in produtos:
+        produto = {
+            "produto": produto[0],
+            "nome": produto[1],
+            "descrição": produto[2],
+            "preço": produto[3],
+            "categoria": produto[4],
+        }
+        print(produto)
 
 def cadastrar_usuario():
     print(f'{fundoPadrao}Cadastro do usuario {corPadrao}')
@@ -51,10 +63,10 @@ def logar_usuario():
         if not email or not re.match(email_padrao, email):
             raise InputError('Insira um email válido')
 
-        token_autenticado = login(email, senha)
-        if token_autenticado != "":
-            print(f'Bem vindo(a)')
-            return token_autenticado
+        id_usuario = login(email, senha)
+        if id_usuario != "":
+            print(f'Bem vindo(a) {email}')
+            return id_usuario
         else:
             print('Usuário não encontrado')
             return False
@@ -62,17 +74,18 @@ def logar_usuario():
     except InputError as erro:
         print(f'Insira um valor válido: {erro}')
 
-# .strip() tira \n
-def sessao_atual():
+def adicionar_ao_carrinho(id_usuario):
     try:
-        sessao_json = ler_sessao()
-        print(sessao_json)
+        print(f'{corPadrao}Adicionar ao carrinho{fundoPadrao}')
+        listar_produtos()
+        comprar_produto = input("Digite o númerodo produto: ")
+        quantidade = int(input("Quantos você vai comprar?: "))
+        repositorio_adicionar_ao_carrinho(id_usuario=id_usuario, id_produto=comprar_produto, quantidade=quantidade)
 
-    except FileNotFoundError:
-        print("Nenhuma sessão ativa. Por favor, faça o login.")
+    except Exception as erro:
+        print(f"Erro ao adicionar ao carrinho; {erro}")
 
-
-def menu_cliente():
+def menu_cliente(id_usuario):
     try:
         while True:
             print(f'{corPadrao}1.{fundoPadrao} Ver catálogo')
@@ -83,12 +96,12 @@ def menu_cliente():
             opcao_usuario = input("Escolha uma opção: ")
             match opcao_usuario:
                 case "1":
-                    repositorio_buscar_produtos()
+                    listar_produtos()
                     voltar_ao_menu_principal()
                 case "2":
                     produtos_em_promocao()
                 case "3":
-                    print('Adicionar ao carrinho')
+                    adicionar_ao_carrinho(id_usuario)
                 case "4":
                     print('finalizar compra')
                 case "5":

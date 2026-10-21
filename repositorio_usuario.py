@@ -172,11 +172,11 @@ def gerar_token():
     token = secrets.token_urlsafe(TOKEN_BYTES)
     return token
 
-data = datetime.now()
-print(data)
+# data = datetime.now()
+# print(data)
 
 def criar_sessao_json(usuario_id, usuario_perfil):
-    data_expiracao = datetime.now()
+    data_expiracao = datetime.now() + timedelta(days=3)
     dados_sessao = {
         "usuario_id": usuario_id,
         "expira_em": data_expiracao,
@@ -202,7 +202,7 @@ def excluir_sessao(id_usuario):
         os.remove(SESSAO_ATUAL)
         with conexao:
             with conexao.cursor() as cursor:
-                cursor.execute(query,id_usuario)
+                cursor.execute(query,(id_usuario,))
         print("Você saiu da sua conta com sucesso")
 
     except FileNotFoundError:
@@ -220,9 +220,10 @@ def login(email, senha):
             with conexao.cursor() as cursor:
                 cursor.execute(query, (email,))
                 usuario_encontrado = cursor.fetchone()
-                if usuario_encontrado is None:
-                    print('O email está incorreto, nenhum usuário encontrado')
-                    return None
+                # if usuario_encontrado is None:
+                #     # errado
+                #     print('O email está incorreto, nenhum usuário encontrado')
+                #     return None
 
             senha_hash = usuario_encontrado[4]
             if verificar_senha(senha_texto=senha, senha_hash =senha_hash):
@@ -241,19 +242,21 @@ def login(email, senha):
     except Exception as erro:
         print(f'Erro ao logar: {erro}')
 
-def validar_sessao(id_usuario):
-    query = "SELECT id_usuario, token_sessao, data_criacao FROM sessoes WHERE token_sessao = %s AND id_usuario = %s;"
+def validar_sessao():
+    query = "SELECT id_usuario, token_sessao, data_criacao FROM sessoes WHERE id_usuario = %s;"
     sessao_json = ler_sessao()
-    data_expiracao = sessao_json["expira_em"]
+    data_expiracao = datetime.fromisoformat(sessao_json["expira_em"])
+    id_usuario = sessao_json["id_usuario"]
     data_atual = datetime.now()
     try:
         with conexao:
             with conexao.cursor() as cursor:
-                cursor.execute(query, id_usuario)
+                cursor.execute(query, (id_usuario,))
                 sessao_encontrada = cursor.fetchone()
 
                 if data_expiracao < data_atual:
                     print("Sessão expirada. Faça login novamente")
+                    excluir_sessao(id_usuario)
                     return False
                 if sessao_encontrada is None:
                     print('O usuário não está logado')
@@ -264,11 +267,13 @@ def validar_sessao(id_usuario):
                     return sessao_json
     except FileNotFoundError:
         print("Nenhuma sessão ativa. Por favor, faça o login.")
+        return False
     except psycopg2.Error as erro:
         print(f'Erro no banco de dados: {erro}')
+        return False
     except Exception as erro:
         print(f'Erro ao validar sessão: {erro}')
-        return None
+        return False
 
 def sair_da_conta(id_usuario):
     query = "DELETE FROM sessoes where id = %s"

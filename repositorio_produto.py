@@ -23,14 +23,17 @@ def repositorio_criar_produto(nome, descricao, preco_atual, promocao, valor_prom
         return None
 
 def repositorio_buscar_produtos():
-    query = "SELECT * FROM produtos ORDER BY id;"
+    query = """SELECT p.id, p.nome, p.descricao, p.preco_atual, c.nome 
+               FROM produtos p
+                INNER JOIN categorias c ON p.id_categoria = c.id
+               ORDER BY p.id;"""
     try:
         with conexao:
             with conexao.cursor() as cursor:
                 cursor.execute(query)
                 produtos = cursor.fetchall()
 
-                if not produtos:
+                if produtos is None:
                     return []
 
                 return produtos

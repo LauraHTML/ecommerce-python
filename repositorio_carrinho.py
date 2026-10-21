@@ -33,17 +33,22 @@ def mostrar_carrinho(usuario_id):
         print(f'Erro inesperado: {erro}')
         return {}
 
-def adicionar_ao_carrinho(id_usuario, id_produto, quantidade):
+def repositorio_adicionar_ao_carrinho(id_usuario, id_produto, quantidade):
+    quantidade_produto = "select quantidade from produtos where id_produto = %s"
     query = """INSERT INTO carrinho (id_usuario, id_produto, quantidade) VALUES (%s, %s, %s)
             ON CONFLICT (id_usuario, id_produto)
             DO UPDATE SET quantidade = carrinho.quantidade + EXCLUDED.quantidade"""
     try:
-        if id_usuario is None or id_produto is None:
-            print('Nenhum id de usuário ou produto recebido')
-        if quantidade <= 0:
-            print('Quantidade de produtos inválido')
         with conexao:
              with conexao.cursor() as cursor:
+                 cursor.execute(quantidade_produto, id_produto)
+                 quantidade_maxima = cursor.fetchone()
+                 if id_usuario is None or id_produto is None:
+                     print('Nenhum id de usuário ou produto recebido')
+                     return
+                 if quantidade <= 0 or quantidade >= quantidade_maxima:
+                     print('Quantidade de produtos inválido')
+                     return
                  cursor.execute(query, (id_usuario, id_produto, quantidade))
                  conexao.commit()
 
