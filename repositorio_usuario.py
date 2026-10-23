@@ -56,11 +56,22 @@ def gerar_hash(senha_em_texto):
     salt = bcrypt.gensalt(10)
     # Cria o hash final
     senha_hash = bcrypt.hashpw(senha_bytes, salt)
-    return senha_hash
+    return senha_hash.decode('utf-8')
 
 def verificar_senha(senha_texto, senha_hash):
     senha_texto_byte = senha_texto.encode('utf-8')
-    senha_hash_byte = senha_hash.encode('utf-8')
+    if isinstance(senha_hash, memoryview):
+        senha_hash_byte = senha_hash.tobytes()
+    elif isinstance(senha_hash, str):
+        senha_hash_byte = senha_hash.encode('utf-8')
+    elif isinstance(senha_hash, bytes):
+        senha_hash_byte = senha_hash
+    else:
+        raise ValueError('O hash de senha armazenado está em um formato inválido.')
+
+    if not senha_hash_byte.startswith((b'$2a$', b'$2b$', b'$2y$')):
+        raise ValueError('O hash de senha armazenado não é um hash bcrypt válido.')
+
     return bcrypt.checkpw(senha_texto_byte, senha_hash_byte)
 
 def criar_usuario(nome, email, senha, perfil):
@@ -175,25 +186,26 @@ def gerar_token():
 # data = datetime.now()
 # print(data)
 
-def criar_sessao_json(usuario_id, usuario_perfil):
+def criar_sessao_json(id_usuario, usuario_perfil):
     data_expiracao = datetime.now() + timedelta(days=3)
     dados_sessao = {
-        "usuario_id": usuario_id,
-        "expira_em": data_expiracao,
+        "id_usuario": id_usuario,
+        "expira_em": data_expiracao.isoformat(),
         "perfil": usuario_perfil
     }
     try:
         with open(SESSAO_ATUAL, "w", encoding="utf-8") as arquivo:
             json.dump(dados_sessao, arquivo)
     except FileNotFoundError:
-        print('O arquivo não foi encontrado')
+        print('Usuário não logado')
 
 def ler_sessao():
     try:
         with open(SESSAO_ATUAL, "r", encoding="utf-8") as arquivo:
-            return json.load(arquivo)
+            sessao_atual = json.load(arquivo)
+            return sessao_atual
     except FileNotFoundError:
-        print('Arquivo não encontrado')
+        print('Usuário não logado')
         return False
 
 def excluir_sessao(id_usuario):
@@ -215,28 +227,41 @@ def excluir_sessao(id_usuario):
 # validar credenciais
 def login(email, senha):
     try:
-        query = "SELECT * FROM public.usuarios WHERE email = %s ;"
+        query = """
+            SELECT id, senha, perfil
+            FROM public.usuarios
+            WHERE email = %s;
+        """
         with conexao:
             with conexao.cursor() as cursor:
                 cursor.execute(query, (email,))
                 usuario_encontrado = cursor.fetchone()
-                # if usuario_encontrado is None:
-                #     # errado
-                #     print('O email está incorreto, nenhum usuário encontrado')
-                #     return None
+                if usuario_encontrado is None:
+                    print('O email está incorreto, nenhum usuário encontrado')
+                    return False
 
-            senha_hash = usuario_encontrado[4]
-            if verificar_senha(senha_texto=senha, senha_hash =senha_hash):
-                id_usuario = usuario_encontrado[0]
+                id_usuario, senha_hash, perfil = usuario_encontrado
+                try:
+                    senha_correta = verificar_senha(
+                        senha_texto=senha,
+                        senha_hash=senha_hash
+                    )
+                except ValueError as erro:
+                    print(f'Não foi possível validar a senha cadastrada: {erro}')
+                    print('Redefina a senha ou cadastre a conta novamente.')
+                    return False
+
+                if not senha_correta:
+                    print('A senha digitada está incorreta')
+                    return False
+
                 token = gerar_token()
 
                 criar_sessao = "INSERT INTO sessoes (id_usuario, token_sessao) VALUES (%s, %s);"
-                criar_sessao_json(id_usuario, token)
                 cursor.execute(criar_sessao, (id_usuario, token))
+                conexao.commit()
+                criar_sessao_json(id_usuario, perfil)
                 return id_usuario
-            else:
-                print('A senha digitada está incorreta')
-            conexao.commit()
     except psycopg2.Error as erro:
         print(f'Erro no banco de dados: {erro}')
     except Exception as erro:
@@ -245,8 +270,10 @@ def login(email, senha):
 def validar_sessao():
     query = "SELECT id_usuario, token_sessao, data_criacao FROM sessoes WHERE id_usuario = %s;"
     sessao_json = ler_sessao()
-    data_expiracao = datetime.fromisoformat(sessao_json["expira_em"])
+    if not sessao_json:
+        return False
     id_usuario = sessao_json["id_usuario"]
+    data_expiracao = datetime.fromisoformat(sessao_json["expira_em"])
     data_atual = datetime.now()
     try:
         with conexao:
@@ -258,9 +285,6 @@ def validar_sessao():
                     print("Sessão expirada. Faça login novamente")
                     excluir_sessao(id_usuario)
                     return False
-                if sessao_encontrada is None:
-                    print('O usuário não está logado')
-                    return False
                 if id_usuario != sessao_encontrada[0]:
                     return False
                 else:
@@ -268,6 +292,8 @@ def validar_sessao():
     except FileNotFoundError:
         print("Nenhuma sessão ativa. Por favor, faça o login.")
         return False
+    except TypeError as erro:
+        print(f"Houve um erro ao validar a sessão: {erro}")
     except psycopg2.Error as erro:
         print(f'Erro no banco de dados: {erro}')
         return False

@@ -51,7 +51,7 @@ def cadastrar_usuario():
     except Exception as erro:
         print(f'Erro inesperado: {erro}')
     else:
-        criar_usuario(nome, senha, email, "cliente")
+        criar_usuario(nome, email, senha, "cliente")
 
 def logar_usuario():
     try:
@@ -64,7 +64,7 @@ def logar_usuario():
             raise InputError('Insira um email válido')
 
         id_usuario = login(email, senha)
-        if id_usuario != "":
+        if id_usuario:
             print(f'Bem vindo(a) {email}')
             return id_usuario
         else:

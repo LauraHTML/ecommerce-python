@@ -24,7 +24,8 @@ def menu_principal():
             match escolha_menu:
                 case "1":
                     id_usuario = logar_usuario()
-                    menu_cliente(id_usuario)
+                    if id_usuario:
+                        menu_cliente(id_usuario)
                 case "2":
                     cadastrar_usuario()
                 case "3":

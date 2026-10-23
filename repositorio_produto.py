@@ -174,7 +174,7 @@ def repositorio_atualizar_produto(id_produto, nome= None, descricao= None, preco
 def produtos_em_promocao():
     query = ("""
              SELECT nome, descricao, preco_atual, valor_promocao, quantidade, nome AS nome_categoria
-             FROM produtos  WHERE promocao == true;
+             FROM produtos  WHERE promocao = true;
              """)
     try:
         with conexao:
